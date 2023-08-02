@@ -1,0 +1,2 @@
+*/30 * * * * bash /root/shelly.sh
+@reboot /root/shelly.sh

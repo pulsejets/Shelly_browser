@@ -1,14 +1,14 @@
 #!/bin/bash
-avahi-browse --all -r -t -p |grep -i shelly >shelly_scan  &>/dev/null
- cat shelly |grep "Web Site" |grep "^[^+]" |cut -d ";" -f4,8,10- > washed_shelly
- cat shelly |grep "_shelly._tcp" |grep "^[^+]" |cut -d ";" -f8- > washed_shelly_2gen
-echo > /var/www/html/shelly.html
+avahi-browse --all -r -t -p |grep -i shelly >shelly_scan
+ cat shelly_scan |grep "Web Site" |grep "^[^+]" |cut -d ";" -f4,8,10- > washed_shelly
+ cat shelly_scan |grep "_shelly._tcp" |grep "^[^+]" |cut -d ";" -f8- > washed_shelly_2gen
+echo `date` > /var/www/html/index.html
 
- cat <<EOT >> /var/www/html/shelly.html 
+ cat <<EOT >> /var/www/html/index.html 
 <!DOCTYPE html>
 <html>
 <head>
-<title>Sort a HTML Table Alphabetically</title>
+<title>Shelly Scanner</title>
 <style>
 table {
   border-spacing: 0;
@@ -47,7 +47,7 @@ tr:nth-child(even) {
 EOT
 f=1
 while read p; do
-echo "<tr>" >>/var/www/html/shelly.html
+echo "<tr>" >>/var/www/html/index.html
 	device=$(echo $p |cut -d ";" -f1)
 	ip=$(echo $p |cut -d ";" -f2)
         type=$(echo $p |cut -d" " -f4|sed 's/"//g'| cut -d"=" -f2)
@@ -55,7 +55,8 @@ if [[ $type = "2" ]];then
 
 	type=$( cat washed_shelly_2gen |grep "$ip;" |cut -d ";" -f3 |sed 's/"//g' |cut -d" " -f3|cut -d"=" -f2)
         name=$(curl -s http://$ip/rpc/Shelly.GetDeviceInfo | jq -r ".name")
-
+	mqtt_id=$(curl -s http:///rpc/Shelly.Getconfig | jq -r ".mqtt.topic_prefix")
+	mqtt_enabled=$(curl -s http://$ip/rpc/Shelly.Getconfig | jq -r ".mqtt.enable")
 else
 	g=$(curl -s http://$ip/settings | jq -r ".name,.cloud.enabled,.mqtt.enable,.mqtt.id,.relays[0].ison" | sed -z 's/\n/;/g')
 ##	name=$(curl -s http://$ip/settings | jq -r ".name")
@@ -69,12 +70,12 @@ else
 
        ison=$(echo $g |cut -d";" -f5)
 fi 
-echo "<td>$f</td><td>$device</td><td><a href='http://$ip' target='_blank'>$ip</a></td><td>$type</td><td>$name</td><td>$cloud</td><td>$mqtt_enabled</td><td>$mqtt_id</td><td>$ison</td></tr>" >>/var/www/html/shelly.html
+echo "<td>$f</td><td>$device</td><td><a href='http://$ip' target='_blank'>$ip</a></td><td>$type</td><td>$name</td><td>$cloud</td><td>$mqtt_enabled</td><td>$mqtt_id</td><td>$ison</td></tr>" >>/var/www/html/index.html
 ((f=f+1))
   done <washed_shelly
 
-echo "</table>" >> /var/www/html/shelly.html
-cat <<EOT >> /var/www/html/shelly.html 
+echo "</table>" >> /var/www/html/index.html
+cat <<EOT >> /var/www/html/index.html 
 <script>
 function sortTable(n) {
   var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
@@ -135,4 +136,4 @@ function sortTable(n) {
 </html>
 EOT
 
-rm -f shelly_* washed_*
+#rm -f shelly_* washed_*
