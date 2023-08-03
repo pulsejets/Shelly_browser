@@ -1,7 +1,7 @@
 #!/bin/bash
 #avahi-browse --all -r -t -p |grep -i shelly >shelly_scan
  #cat shelly_scan |grep "Web Site" |grep "^[^+]" |cut -d ";" -f4,8,10- > washed_shelly
- avahi-browse  _http._tcp -r -t -p |grep -i shelly |grep "^[^+]" |cut -d ";" -f4,8,10- |cut -d" " -f4|sed 's/"//g'| cut -d"=" -f2  > washed_shelly
+ avahi-browse  _http._tcp -r -t -p |grep -i shelly |grep "^[^+]" |cut -d ";" -f4,8,10-   > washed_shelly
  #cat shelly_scan |grep "_shelly._tcp" |grep "^[^+]" |cut -d ";" -f8- > washed_shelly_2gen
  avahi-browse  _shelly._tcp -r -t -p |grep -i shelly |grep "^[^+]" |cut -d ";" -f8- >washed_shelly_2gen
 echo `date` > /var/www/html/index.html
@@ -10,6 +10,7 @@ echo `date` > /var/www/html/index.html
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="utf-8" />
 <title>Shelly Scanner</title>
 <style>
 table {
@@ -44,7 +45,6 @@ tr:nth-child(even) {
 <th onclick="sortTable(7)">mqtt id</th>
 
 <th onclick="sortTable(8)">power state</th>
-
 </tr>
 EOT
 f=1
@@ -54,14 +54,24 @@ echo "<tr>" >>/var/www/html/index.html
 	ip=$(echo $p |cut -d ";" -f2)
         type=$(echo $p |cut -d" " -f4|sed 's/"//g'| cut -d"=" -f2)
 if [[ $type = "2" ]];then 
-
+ echo "::"+$ip+"::"
 	type=$( cat washed_shelly_2gen |grep "$ip;" |cut -d ";" -f3 |sed 's/"//g' |cut -d" " -f3|cut -d"=" -f2)
         name=$(curl -s http://$ip/rpc/Shelly.GetDeviceInfo | jq -r ".name")
-	mqtt_id=$(curl -s http:///rpc/Shelly.Getconfig | jq -r ".mqtt.topic_prefix")
+	mqtt_id=$(curl -s http://$ip/rpc/Shelly.Getconfig | jq -r ".mqtt.topic_prefix")
 	mqtt_enabled=$(curl -s http://$ip/rpc/Shelly.Getconfig | jq -r ".mqtt.enable")
+		cloud=$(curl -s http://$ip/rpc/Shelly.Getconfig | jq -r ".cloud.enable")
 else
-	g=$(curl -s http://$ip/settings | jq -r ".name,.cloud.enabled,.mqtt.enable,.mqtt.id,.relays[0].ison" | sed -z 's/\n/;/g')
-##	name=$(curl -s http://$ip/settings | jq -r ".name")
+
+   if [[ $type = "dimmer" ]]; then
+  g=$(curl -s http://$ip/settings | jq -r ".name,.cloud.enabled,.mqtt.enable,.mqtt.id,.lights[0].ison" | sed -z 's/\n/;/g')  
+  
+   else
+
+ g=$(curl -s http://$ip/settings | jq -r ".name,.cloud.enabled,.mqtt.enable,.mqtt.id,.relays[0].ison" | sed -z 's/\n/;/g')
+   fi
+##	
+
+name=$(curl -s http://$ip/settings | jq -r ".name")
        name=$(echo $g |cut -d";" -f1)
        
        cloud=$(echo $g |cut -d";" -f2)
