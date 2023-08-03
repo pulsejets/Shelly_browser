@@ -1,7 +1,9 @@
 #!/bin/bash
-avahi-browse --all -r -t -p |grep -i shelly >shelly_scan
- cat shelly_scan |grep "Web Site" |grep "^[^+]" |cut -d ";" -f4,8,10- > washed_shelly
- cat shelly_scan |grep "_shelly._tcp" |grep "^[^+]" |cut -d ";" -f8- > washed_shelly_2gen
+#avahi-browse --all -r -t -p |grep -i shelly >shelly_scan
+ #cat shelly_scan |grep "Web Site" |grep "^[^+]" |cut -d ";" -f4,8,10- > washed_shelly
+ avahi-browse  _http._tcp -r -t -p |grep -i shelly |grep "^[^+]" |cut -d ";" -f4,8,10- |cut -d" " -f4|sed 's/"//g'| cut -d"=" -f2  > washed_shelly
+ #cat shelly_scan |grep "_shelly._tcp" |grep "^[^+]" |cut -d ";" -f8- > washed_shelly_2gen
+ avahi-browse  _shelly._tcp -r -t -p |grep -i shelly |grep "^[^+]" |cut -d ";" -f8- >washed_shelly_2gen
 echo `date` > /var/www/html/index.html
 
  cat <<EOT >> /var/www/html/index.html 
